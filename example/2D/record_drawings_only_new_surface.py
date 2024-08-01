@@ -28,18 +28,19 @@ data =np.load(source_path+ '/data/'+str('example')+'.npz')
 X=data['demo'] 
 S=data['floor'] 
 S1=data['newfloor']
+
 #%% Visualize the drawings
-fig, ax= plt.subplots(figsize=(12,7))
+fig, ax = plt.subplots(figsize=(12,7))
 plt.xlim([-50, 50-1])
 plt.ylim([-50, 50-1])
 plt.scatter(X[:,0],X[:,1], color=[1,0,0]) 
 plt.scatter(S[:,0],S[:,1], color=[0,1,0])   
 Surface_Demo = Drawing(fig, ax, draw=2)
 
-Surface_Demo.demo= X
-Surface_Demo.floor = S
+# Visualize the drawings
+demonstration = Surface_Demo.demo
+surface = Surface_Demo.floor
 newsurface = Surface_Demo.newfloor
-
 
 plt.scatter(newsurface[:,0],newsurface[:,1], color=[0,0,1]) 
 

@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 from matplotlib import cm
 from mpl_toolkits.mplot3d import Axes3D
 from tqdm import tqdm
+
 class GaussianProcess():
     def __init__(self, kernel, alpha=1e-10, optimizer='fmin_l_bfgs_b', n_restarts_optimizer=5, n_targets=None):
         if optimizer != None:
@@ -20,16 +21,19 @@ class GaussianProcess():
             self.gp = GaussianProcessRegressor(kernel=kernel, alpha=alpha, optimizer=optimizer, n_targets=n_targets)      
         self.kernel=kernel
         self.alpha=alpha
+
     def fit(self, X, Y):
-            self.X=X
+            self.X=X  # shape (no of sample, no of features/states) = (611, 2)
             self.Y=Y
             self.n_features=np.shape(self.X)[1]
             self.n_samples=np.shape(self.X)[0]
             self.n_outputs=np.shape(self.Y)[1]
+            
             # filter out the nan values
             mask = np.isnan(self.Y).any(axis=1)
             self.X=self.X[~mask]
             self.Y=self.Y[~mask]
+
             self.gp.fit(self.X,self.Y)
             self.kernel= self.gp.kernel_
             self.kernel_params_= [self.kernel.get_params()['k1__k2__length_scale'], self.kernel.get_params()['k1']]
@@ -107,9 +111,9 @@ class GaussianProcess():
         lascale_rehaped= lscale[ :,  :, np.newaxis]
 
         # Calculate the difference
-        difference_matrix =  X_reshaped - x_reshaped
+        difference_matrix = X_reshaped - x_reshaped
         
-        coefficient= difference_matrix/ ( lascale_rehaped** 2) 
+        coefficient= difference_matrix/ (lascale_rehaped**2) 
 
         #coefficient of dk_dx_prime that multiplies the kernel itself  (x - x_prime)/sigma_l**2
         dk_star_dx=  coefficient * k_star

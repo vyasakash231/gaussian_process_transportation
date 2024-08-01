@@ -15,9 +15,9 @@ import pathlib
 
 class Drawing():
     def __init__(self, fig, ax, draw=2):
-        # 
         if fig is None or ax is None:
             self.fig, self.ax =  plt.subplots()
+        else:
             self.fig=fig
             self.ax=ax
         self.ax.set_xlim(-50, 50-1)
