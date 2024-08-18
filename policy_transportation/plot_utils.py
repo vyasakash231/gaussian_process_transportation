@@ -1,20 +1,131 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import cm
-from matplotlib.patches import PathPatch
+from matplotlib.patches import PathPatch, Circle
 from matplotlib.path import Path
 from tqdm import tqdm
 
-def plot_vector_field(model,datax_grid,datay_grid,demo,surface):
+
+def plot_vector_field(model, datax_grid, datay_grid, demo, surface):
     dataXX, dataYY = np.meshgrid(datax_grid, datay_grid)
-    pos_array= np.column_stack((dataXX.ravel(), dataYY.ravel()))
-    vel=model.predict(pos_array)
-    u= vel[:,0].reshape(dataXX.shape)
-    v= vel[:,1].reshape(dataXX.shape)
-    fig = plt.figure(figsize = (12, 7))
-    plt.streamplot(dataXX, dataYY, u, v, density = 2)
-    plt.scatter(demo[:,0],demo[:,1], color=[1,0,0])
-    plt.scatter(surface[:,0],surface[:,1], color=[0,0,0])
+    pos_array = np.column_stack((dataXX.ravel(), dataYY.ravel()))
+    vel = model.predict(pos_array)
+    u = vel[:, 0].reshape(dataXX.shape)
+    v = vel[:, 1].reshape(dataXX.shape)
+    
+    fig, ax = plt.figure(figsize=(12, 7)), plt.gca()
+    ax.set_aspect(1)
+    ax.streamplot(dataXX, dataYY, u, v, density=2)
+    ax.scatter(demo[:, 0], demo[:, 1], color=[1, 0, 0])
+    ax.scatter(surface[:, 0], surface[:, 1], color=[0, 0, 0])
+
+#################################################################################################
+
+#  Implement the modulation matrix M as per equation (5) in the paper, This is a simplified version
+def modulation_matrix_for_spherical(state, obstacle_center, obstacle_radius):
+    M = np.zeros((state.shape[0],2,2))
+    for i in range(state.shape[0]):
+        q = state[i,:].reshape(2,1) - obstacle_center
+        d = np.linalg.norm(q)
+        n = q / d
+        e = np.array([[-n[1,0]], [n[0,0]]])
+        E = np.hstack((n,e))
+
+        lambda_1 = 1 - np.power((obstacle_radius / d),2)
+        lambda_2 = 1 + np.power((obstacle_radius / d),2)
+        D = np.diag([lambda_1, lambda_2])
+        M[i,:,:] = E @ D @ E.T
+    return M
+
+def plot_modified_vector_field_1(model,datax_grid,datay_grid,demo,surface,obstacle_center,radius):
+    dataXX, dataYY = np.meshgrid(datax_grid, datay_grid)  #  both will have a shape of (100,100)
+    pos_array = np.column_stack((dataXX.ravel(), dataYY.ravel()))  # (10000,2)
+
+    M = modulation_matrix_for_spherical(pos_array,obstacle_center,radius)  # shape (10000,2,2)
+
+    vel = model.predict(pos_array)  # shape (10000,2)
+    
+    # Modulated velocity
+    new_vel = np.squeeze(np.matmul(M, np.expand_dims(vel,axis=2)), axis=2)
+
+    u = new_vel[:, 0].reshape(dataXX.shape)
+    v = new_vel[:, 1].reshape(dataXX.shape)
+    
+    fig, ax = plt.figure(figsize=(12, 7)), plt.gca()
+    ax.set_aspect(1)
+    ax.streamplot(dataXX, dataYY, u, v, density=2)
+    ax.scatter(demo[:, 0], demo[:, 1], color=[1, 0, 0])
+    ax.scatter(surface[:, 0], surface[:, 1], color=[0, 0, 0])
+    
+    # Add the circle
+    circle = Circle((-20, 30), radius=5, edgecolor='black', facecolor='black', linewidth=2)
+    ax.add_patch(circle)
+
+#################################################################################################
+
+def modulation_matrix_for_eliptic(state, obstacle_center, r1, r2, m):
+    M = np.zeros((state.shape[0],2,2))
+    for i in range(state.shape[0]):
+        q = state[i,:].reshape(2,1) - obstacle_center
+
+        # gradient wrt x,y
+        gx = (m/pow(r1,m)) * pow(q[0,0], m-1)
+        gy = (m/pow(r2,m)) * pow(q[1,0], m-1)
+
+        grad = np.array([[gx],[gy]])
+
+        # Normalize gradient to get normal vector
+        n = grad / np.linalg.norm(grad)
+
+        e = np.cross(np.vstack((n, [0])).reshape(-1), np.array([0,0,1]))
+        e = e / np.linalg.norm(e)
+
+        E = np.hstack((n, np.array([[e[0]],[e[1]]])))
+
+        #  Compute distance to the surface
+        d = pow((q[0,0]/r1)**m + (q[1,0]/r2)**m, 1/m)
+
+        lambda_1 = 1 - 1/(np.abs(d)**(1/1.25))
+        lambda_2 = 1 + 1/(np.abs(d)**(1/1.25))
+        D = np.diag([lambda_1, lambda_2])
+        M[i,:,:] = E @ D @ E.T
+    return M
+    
+def plot_modified_vector_field_2(model,datax_grid,datay_grid,demo,surface,obstacle_center, r1, r2, m):
+    dataXX, dataYY = np.meshgrid(datax_grid, datay_grid)  #  both will have a shape of (100,100)
+    pos_array = np.column_stack((dataXX.ravel(), dataYY.ravel()))  # (10000,2)
+
+    F = pow(((dataXX-obstacle_center[0,0]) / r1),m) + pow(((dataYY-obstacle_center[1,0]) / r2),m) - 1
+
+    M = modulation_matrix_for_eliptic(pos_array,obstacle_center, r1, r2, m)  # shape (10000,2,2)
+
+    vel = model.predict(pos_array)  # shape (10000,2)
+    
+    # Modulated velocity
+    new_vel = np.squeeze(np.matmul(M, np.expand_dims(vel,axis=2)), axis=2)
+
+    u = new_vel[:, 0].reshape(dataXX.shape)
+    v = new_vel[:, 1].reshape(dataXX.shape)
+    
+    fig, ax = plt.figure(figsize=(12, 7)), plt.gca()
+    ax.set_aspect(1)
+    ax.streamplot(dataXX, dataYY, u, v, density=2)
+    ax.scatter(demo[:, 0], demo[:, 1], color=[1, 0, 0])
+    ax.scatter(surface[:, 0], surface[:, 1], color=[0, 0, 0])
+    
+    # Calculate and plot the contour
+    contour_level = 0
+    contour = plt.contour(dataXX, dataYY, F, levels=[contour_level])
+
+    # Extract contour paths
+    paths = contour.collections[0].get_paths()
+    
+    # Plot the patch for each path
+    for path in paths:
+        x_contour, y_contour = path.vertices[:, 0], path.vertices[:, 1]
+        plt.fill(x_contour, y_contour, 'k')  # 'b' specifies the color blue
+
+#################################################################################################
 
 def plot_vector_field_minvar(model,datax_grid,datay_grid,demo,surface):
     dataXX, dataYY = np.meshgrid(datax_grid, datay_grid)

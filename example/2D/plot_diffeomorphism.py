@@ -6,6 +6,10 @@ This code is part of TERI (TEaching Robots Interactively) project
 """
 
 #%%
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
+
 import numpy as np
 from sklearn.gaussian_process.kernels import RBF, Matern, WhiteKernel, ConstantKernel as C
 import matplotlib.pyplot as plt
@@ -17,15 +21,17 @@ from policy_transportation.plot_utils import plot_vector_field
 from policy_transportation.utils import resample
 import warnings
 warnings.filterwarnings("ignore")
-#%% Load the drawings
 
+#%% Load the drawings
 source_path = str(pathlib.Path(__file__).parent.absolute())  
-data =np.load(source_path+ '/data/'+str('example')+'.npz')
-X=data['demo'] 
-S=data['floor'] 
-S1=data['newfloor']
-source_distribution=resample(S, num_points=20)
-target_distribution=resample(S1, num_points=20)
+data =np.load(source_path + '/data/' + str('example') + '.npz')
+X=data['demo']   # demonstration trajectory (611, 2)
+S=data['floor']  # source distribution (173,2)
+S1=data['newfloor']  # target distribution (173,2)
+source_distribution=resample(S, num_points=20)  # sample "n" no of environment point from source distribution 
+target_distribution=resample(S1, num_points=20)  # sample "n" no of environment point from target distribution 
+
+# print(S.shape)
 
 fig = plt.figure()
 plt.xlim([-50, 50-1])
@@ -34,6 +40,7 @@ plt.scatter(X[:,0],X[:,1], color=[0,1,0])
 plt.scatter(source_distribution[:,0],source_distribution[:,1], color='green')   
 plt.scatter(target_distribution[:,0],target_distribution[:,1], color=[0,0,1]) 
 plt.legend(["Demonstration","Surface","New Surface"])
+
 #%% Transport the dynamical system on the new surface
 transport=Transport()
 transport_affine = AffineTransportation()
@@ -50,8 +57,8 @@ transport_affine.fit_transportation()
 
 x_lim=[np.min(X[:,0]-15), np.max(X[:,0]+15)]
 y_lim=[np.min(X[:,1]-15), np.max(X[:,1]+15)]
-## Plot diffeomorphism
 
+## Plot diffeomorphism
 fig, axs = plt.subplots(1, 4, figsize=(16, 4))
 
 axs[0].scatter(source_distribution[:, 0], source_distribution[:, 1], color='green', label='Source Distribution')
@@ -65,12 +72,12 @@ for i in range(len(source_distribution)):
         axs[0].plot([source_distribution[i, 0], target_distribution[i, 0]], [source_distribution[i, 1], target_distribution[i, 1]], color='black', alpha=0.5, linewidth=0.5)
 
 num_points=15
-x_grid=np.linspace(-40, 30, num_points)
-y_grid=np.linspace(-30, 0, num_points)
-X, Y = np.meshgrid(x_grid, y_grid)
-#reshape it 
+x_grid=np.linspace(-40, 30, num_points) # it has 15 elements [15,]
+y_grid=np.linspace(-30, 0, num_points) # it has 15 elements [15,]
+X, Y = np.meshgrid(x_grid, y_grid) # it has [y-no of row, x-no of column] = [15,15] in X and Y
 
-grid=np.hstack((X.reshape(-1,1),Y.reshape(-1,1)))
+#reshape it 
+grid=np.hstack((X.reshape(-1,1),Y.reshape(-1,1))) # each one has, [2*(y-no of row * x-no of column),] = [2*(15*15),]
 
 norms = np.linalg.norm(grid - np.min(grid, axis=0), axis=1)
 colors = norms[:, np.newaxis] / norms.max()  # normalize the norms to [0, 1]
@@ -89,6 +96,7 @@ axs[1].set_yticklabels([])
 axs[1].legend()
 # plt.axis('equal')
 
+# Linear Transform
 transport_affine.training_traj=grid
 # transport.training_delta=None
 
@@ -117,6 +125,8 @@ axs[2].scatter(source_distribution_new[:,0], source_distribution_new[:,1], facec
 axs[2].set_title('Linear Transformation', fontsize=20)
 axs[2].set_yticks([])
 axs[2].set_yticklabels([])
+
+# Non-Linear Transform
 transport.training_traj=grid
 # transport.training_delta=None
 # transport.optimize_diffeomorphism()
@@ -152,3 +162,5 @@ axs[3].set_yticklabels([])
 plt.subplots_adjust(wspace=0.05)
 plt.savefig(source_path+'/pictures/diffeomorphism.pdf', dpi=300, bbox_inches='tight')
 plt.show()
+
+# %%

@@ -17,9 +17,9 @@ class AffineTransform():
         assert len(source_points) == len(target_points)
             
         # Compute centroids
-        self.S_centroid = np.mean(source_points, axis=0)
+        self.S_centroid = np.mean(source_points, axis=0)  # for 2D DS -> (x1,x2) is the centroid
         self.T_centroid = np.mean(target_points, axis=0)
-        self.source_points_centered=source_points-self.S_centroid
+        self.source_points_centered=source_points-self.S_centroid   # shift base frame to centroid
         self.target_points_centered=target_points-self.T_centroid
 
         if not self.do_rotation or (source_points.shape[1] == 2 and source_points.shape[0] < 2) or (source_points.shape[1] == 3 and source_points.shape[0] < 3):
@@ -34,14 +34,17 @@ class AffineTransform():
             #Check for reflactions https://nghiaho.com/?page_id=671
             if np.linalg.det(self.rotation_matrix)<0:
                 V[:,-1]*= -1
-                self.rotation_matrix= V @ U.T
+                self.rotation_matrix = V @ U.T
 
         if self.do_scale:
             source_rotated=np.transpose(self.rotation_matrix @ np.transpose((self.source_points_centered)))
             self.scale = np.sum(source_rotated * self.target_points_centered) / np.sum(source_rotated**2)
+        
         print ("Rotation Matrix of the Affine Matrix:")
         print(self.rotation_matrix)
+        
         print ("Scaling factor:", self.scale)
+        
         #Compute translation
         self.translation=self.T_centroid-self.S_centroid
         
