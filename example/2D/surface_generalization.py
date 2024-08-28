@@ -6,7 +6,7 @@ This code is part of TERI (TEaching Robots Interactively) project
 """
 
 
-#%%
+#%%  --------------------------------------------------------------------------------------------------------------------------------------------
 import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
@@ -23,7 +23,9 @@ from policy_transportation.utils import resample
 import warnings
 warnings.filterwarnings("ignore")
 
-#%% Load the drawings
+
+
+#%% Load the drawings -------------------------------------------------------------------------------------------------------------------------
 source_path = str(pathlib.Path(__file__).parent.absolute())  
 data =np.load(source_path+ '/data/'+str('example')+'.npz')
 X=data['demo'] 
@@ -33,28 +35,34 @@ X=resample(X, num_points=100)
 source_distribution=resample(S, num_points=20)
 target_distribution=resample(S1, num_points=20)
 
-#%% Calculate deltaX
+
+
+#%% Calculate deltaX --------------------------------------------------------------------------------------------------------------------------
 deltaX = np.zeros((len(X),2))
 for j in range(len(X)-1):
     deltaX[j,:]=(X[j+1,:]-X[j,:])
 
-# #%% Fit a dynamical system (X_dot = f(X)) to the demo and plot it
-# k_deltaX = C(constant_value=np.sqrt(0.1))  * Matern(1*np.ones(2), nu=2.5) + WhiteKernel(0.01) 
-# gp_deltaX=GPR(kernel=k_deltaX)
-# gp_deltaX.fit(X, deltaX)
-# x_grid=np.linspace(np.min(X[:,0]-10), np.max(X[:,0]+10), 100)
-# y_grid=np.linspace(np.min(X[:,1]-10), np.max(X[:,1]+10), 100)
-# plot_vector_field(gp_deltaX, x_grid, y_grid, X, target_distribution)
 
-# fig = plt.figure(figsize = (12, 7))
-# plt.xlim([-50, 50-1])
-# plt.ylim([-50, 50-1])
-# plt.scatter(X[:,0],X[:,1], color=[1,0,0]) 
-# plt.scatter(source_distribution[:,0],source_distribution[:,1], color=[0,1,0])   
-# plt.scatter(target_distribution[:,0],target_distribution[:,1], color=[0,0,1]) 
-# plt.legend(["Demonstration","Surface","New Surface"])
 
-#%% Transport the dynamical system on the new surface
+#%% Fit a dynamical system (X_dot = f(X)) to the demo and plot it ----------------------------------------------------------------------------
+k_deltaX = C(constant_value=np.sqrt(0.1))  * Matern(1*np.ones(2), nu=2.5) + WhiteKernel(0.01) 
+gp_deltaX=GPR(kernel=k_deltaX)
+gp_deltaX.fit(X, deltaX)
+x_grid=np.linspace(np.min(X[:,0]-10), np.max(X[:,0]+10), 100)
+y_grid=np.linspace(np.min(X[:,1]-10), np.max(X[:,1]+10), 100)
+plot_vector_field(gp_deltaX, x_grid, y_grid, X, target_distribution)
+
+fig = plt.figure(figsize = (12, 7))
+plt.xlim([-50, 50-1])
+plt.ylim([-50, 50-1])
+plt.scatter(X[:,0],X[:,1], color=[1,0,0]) 
+plt.scatter(source_distribution[:,0],source_distribution[:,1], color=[0,1,0])   
+plt.scatter(target_distribution[:,0],target_distribution[:,1], color=[0,0,1]) 
+plt.legend(["Demonstration","Surface","New Surface"])
+
+
+
+#%% Transport the dynamical system on the new surface -----------------------------------------------------------------------------------------
 k_transport = C(constant_value=10)  * RBF(4*np.ones(2)) + WhiteKernel(0.01 )
 
 # This is a GP_model_1(x_label = X, y_label = X̂), to map (demo deta = X) to (transported demo deta = X̂)
@@ -80,7 +88,9 @@ y1_grid=np.linspace(np.min(X1[:,1]-10), np.max(X1[:,1]+10), 100)
 plot_vector_field(gp_deltaX1, x1_grid, y1_grid, X1, target_distribution)
 plt.show()
 
-#%% Transport the dynamical system on the new surface
+
+
+#%% Transport the dynamical system on the new surface -----------------------------------------------------------------------------------------
 k_transport = C(constant_value=10)  * RBF(4*np.ones(2)) + WhiteKernel(0.01 )
 
 # This is a GP_model_1(x_label = X, y_label = X̂), to map (demo deta = X) to (transported demo deta = X̂)
@@ -111,7 +121,9 @@ plot_modified_vector_field_1(gp_deltaX1, x1_grid, y1_grid, X1, target_distributi
                            obstacle_center, radius)
 plt.show()
 
-#%% Transport the dynamical system on the new surface
+
+
+#%% Transport the dynamical system on the new surface ----------------------------------------------------------------------------------------
 k_transport = C(constant_value=10)  * RBF(4*np.ones(2)) + WhiteKernel(0.01 )
 
 # This is a GP_model_1(x_label = X, y_label = X̂), to map (demo deta = X) to (transported demo deta = X̂)
