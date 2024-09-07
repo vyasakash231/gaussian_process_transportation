@@ -18,7 +18,7 @@ from policy_transportation import GaussianProcess as GPR
 from policy_transportation import GaussianProcessTransportation as Transport
 # from policy_transportation.transportation.gaussian_process_transportation_diffeomorphic import GaussianProcessTransportationDiffeo as Transport
 import pathlib
-from policy_transportation.plot_utils import plot_vector_field, plot_modified_vector_field_1, plot_modified_vector_field_2, plot_vector_field_minvar
+from policy_transportation.plot_utils import plot_vector_field, plot_modified_vector_field_1, plot_modified_vector_field_2, plot_modified_vector_field_3
 from policy_transportation.utils import resample
 import warnings
 warnings.filterwarnings("ignore")
@@ -31,7 +31,8 @@ data =np.load(source_path+ '/data/'+str('example')+'.npz')
 X=data['demo'] 
 S=data['floor'] 
 S1=data['newfloor']
-X=resample(X, num_points=100)
+X=resample(X, num_points=400)
+# X=X[:225,:]
 source_distribution=resample(S, num_points=20)
 target_distribution=resample(S1, num_points=20)
 
@@ -63,19 +64,23 @@ plt.legend(["Demonstration","Surface","New Surface"])
 
 
 #%% Transport the dynamical system on the new surface -----------------------------------------------------------------------------------------
-k_transport = C(constant_value=10)  * RBF(4*np.ones(2)) + WhiteKernel(0.01 )
+k_transport = C(constant_value=10)  * RBF(4*np.ones(2)) + WhiteKernel(0.01)
 
 # This is a GP_model_1(x_label = X, y_label = X̂), to map (demo deta = X) to (transported demo deta = X̂)
-transport=Transport(kernel_transport= k_transport)  
+transport=Transport(kernel_transport=k_transport)  
 transport.source_distribution=source_distribution  # pass source distribution (S)
 transport.target_distribution=target_distribution  # pass target distribution (τ)
 transport.training_traj=X  # pass X (demo data subset) into the GP_model_1
 transport.training_delta=deltaX  # pass Ẋ = ΔX into the GP_model_1
+# print(X.shape,'\n')
+# print(X[:10,:])
 
 print('Transporting the dynamical system on the new surface')
 transport.fit_transportation(do_scale=False, do_rotation=True)
 transport.apply_transportation()
 X1=transport.training_traj  # we will get X̂ = GP_model_1(X)
+# print(X1.shape,'\n')
+# print(X1[:10,:])
 deltaX1=transport.training_delta # we will get ΔX̂ = GP_model_1(ΔX)
 
 # Fit the Gaussian Process dynamical system   
@@ -90,7 +95,7 @@ plt.show()
 
 
 
-#%% Transport the dynamical system on the new surface -----------------------------------------------------------------------------------------
+#%% Transport the dynamical system on the new surface with obstacle -----------------------------------------------------------------------------------------
 k_transport = C(constant_value=10)  * RBF(4*np.ones(2)) + WhiteKernel(0.01 )
 
 # This is a GP_model_1(x_label = X, y_label = X̂), to map (demo deta = X) to (transported demo deta = X̂)
@@ -108,7 +113,7 @@ deltaX1=transport.training_delta # we will get ΔX̂ = GP_model_1(ΔX)
 
 # Spherical Obstacle 
 obstacle_center = np.array([[-20], [30]])
-radius = 5
+radius = 8
 
 # Fit the Gaussian Process dynamical system   
 print('Fitting the GP dynamical system on the transported trajectory')
@@ -123,8 +128,44 @@ plt.show()
 
 
 
-#%% Transport the dynamical system on the new surface ----------------------------------------------------------------------------------------
-k_transport = C(constant_value=10)  * RBF(4*np.ones(2)) + WhiteKernel(0.01 )
+#%% Transport the dynamical system on the new surface with obstacle ----------------------------------------------------------------------------------------
+k_transport = C(constant_value=10)  * RBF(4*np.ones(2)) + WhiteKernel(0.01)
+
+# This is a GP_model_1(x_label = X, y_label = X̂), to map (demo deta = X) to (transported demo deta = X̂)
+transport=Transport(kernel_transport= k_transport)  
+transport.source_distribution=source_distribution  # pass source distribution (S)
+transport.target_distribution=target_distribution  # pass target distribution (τ)
+transport.training_traj=X  # pass X (demo data subset) into the GP_model_1
+transport.training_delta=deltaX  # pass Ẋ = ΔX into the GP_model_1
+
+print('Transporting the dynamical system on the new surface')
+transport.fit_transportation(do_scale=False, do_rotation=True)
+transport.apply_transportation()
+X1=transport.training_traj  # we will get X̂ = GP_model_1(X)
+deltaX1=transport.training_delta # we will get ΔX̂ = GP_model_1(ΔX)
+
+# Eliptic Obstacle
+obstacle_center = np.array([[-22], [25]])
+r1 = 8
+r2 = 8
+m = 4
+
+# Fit the Gaussian Process dynamical system   
+print('Fitting the GP dynamical system on the transported trajectory')
+k_deltaX1 = C(constant_value=np.sqrt(0.1))  * Matern(1*np.ones(2), nu=2.5) + WhiteKernel(0.01)    
+gp_deltaX1=GPR(kernel=k_deltaX1)
+gp_deltaX1.fit(X1, deltaX1)  # fit a new GP_model_2(x_label = ΔX, y_label = ΔX̂)
+x1_grid=np.linspace(np.min(X1[:,0]-10), np.max(X1[:,0]+10), 100)  # 100 x-samples
+y1_grid=np.linspace(np.min(X1[:,1]-10), np.max(X1[:,1]+10), 100)  # 100 y-samples
+
+# full Euler-integration
+plot_modified_vector_field_2(gp_deltaX1, x1_grid, y1_grid, X1, target_distribution, obstacle_center, r1, r2, m)
+plt.show()
+
+
+
+#%%
+k_transport = C(constant_value=10)  * RBF(4*np.ones(2)) + WhiteKernel(0.01)
 
 # This is a GP_model_1(x_label = X, y_label = X̂), to map (demo deta = X) to (transported demo deta = X̂)
 transport=Transport(kernel_transport= k_transport)  
@@ -141,8 +182,8 @@ deltaX1=transport.training_delta # we will get ΔX̂ = GP_model_1(ΔX)
 
 # Eliptic Obstacle
 obstacle_center = np.array([[-20], [30]])
-r1 = 4
-r2 = 6
+r1 = 10
+r2 = 5
 m = 4
 
 # Fit the Gaussian Process dynamical system   
@@ -152,7 +193,8 @@ gp_deltaX1=GPR(kernel=k_deltaX1)
 gp_deltaX1.fit(X1, deltaX1)  # fit a new GP_model_2(x_label = ΔX, y_label = ΔX̂)
 x1_grid=np.linspace(np.min(X1[:,0]-10), np.max(X1[:,0]+10), 100)  # 100 x-samples
 y1_grid=np.linspace(np.min(X1[:,1]-10), np.max(X1[:,1]+10), 100)  # 100 y-samples
-plot_modified_vector_field_2(gp_deltaX1, x1_grid, y1_grid, X1, target_distribution,
-                           obstacle_center, r1, r2, m)
+
+# full Euler-integration
+plot_modified_vector_field_3(gp_deltaX1, x1_grid, y1_grid, X1, target_distribution, obstacle_center, r1, r2, m)
 plt.show()
 # %%
