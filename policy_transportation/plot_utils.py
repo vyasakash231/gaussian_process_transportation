@@ -98,7 +98,7 @@ def plot_modified_vector_field_1(model,datax_grid,datay_grid,demo,surface,obstac
     ax.streamplot(dataXX, dataYY, u, v, density=2)
     ax.scatter(demo[:, 0], demo[:, 1], color=[1, 0, 0])
     # ax.scatter(new_trajectry[:, 0], new_trajectry[:, 1], color=[0.6, 0.35, 0.85])
-    ax.plot(new_trajectry[:, 0], new_trajectry[:, 1], lw=3.5, color=[0.6, 0.35, 0.85])
+    ax.plot(new_trajectry[:, 0], new_trajectry[:, 1], lw=3.5, color=[0.6, 0.8, 0.5])
     ax.scatter(surface[:, 0], surface[:, 1], color=[0, 0, 0])
     
     # Add the circle
@@ -165,7 +165,7 @@ def plot_modified_vector_field_2(model,datax_grid,datay_grid,demo,surface,obstac
     ax.streamplot(dataXX, dataYY, u, v, density=2)
     ax.scatter(demo[:, 0], demo[:, 1], color=[1, 0, 0])
     # ax.scatter(new_trajectry[:, 0], new_trajectry[:, 1], color=[0.6, 0.35, 0.85])
-    ax.plot(new_trajectry[:, 0], new_trajectry[:, 1], lw=3.5, color=[0.6, 0.35, 0.85])
+    ax.plot(new_trajectry[:, 0], new_trajectry[:, 1], lw=3.5, color=[0.6, 0.8, 0.5])
     ax.scatter(surface[:, 0], surface[:, 1], color=[0, 0, 0])
     
     # Calculate and plot the contour
@@ -239,7 +239,7 @@ def plot_modified_vector_field_3(model,datax_grid,datay_grid,demo,surface,obstac
     ax.set_aspect(1)
     ax.streamplot(dataXX, dataYY, u, v, density=2)
     ax.scatter(demo[:, 0], demo[:, 1], color=[1, 0, 0])
-    ax.scatter(new_trajectry[:, 0], new_trajectry[:, 1], color=[0.6, 0.35, 0.85])
+    ax.scatter(new_trajectry[:, 0], new_trajectry[:, 1], color=[0.6, 0.8, 0.5])
     ax.scatter(surface[:, 0], surface[:, 1], color=[0, 0, 0])
     
     # Calculate and plot the contour

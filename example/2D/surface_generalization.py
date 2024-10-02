@@ -72,15 +72,11 @@ transport.source_distribution=source_distribution  # pass source distribution (S
 transport.target_distribution=target_distribution  # pass target distribution (τ)
 transport.training_traj=X  # pass X (demo data subset) into the GP_model_1
 transport.training_delta=deltaX  # pass Ẋ = ΔX into the GP_model_1
-# print(X.shape,'\n')
-# print(X[:10,:])
 
 print('Transporting the dynamical system on the new surface')
 transport.fit_transportation(do_scale=False, do_rotation=True)
 transport.apply_transportation()
 X1=transport.training_traj  # we will get X̂ = GP_model_1(X)
-# print(X1.shape,'\n')
-# print(X1[:10,:])
 deltaX1=transport.training_delta # we will get ΔX̂ = GP_model_1(ΔX)
 
 # Fit the Gaussian Process dynamical system   
@@ -164,7 +160,7 @@ plt.show()
 
 
 
-#%%
+#%%  ----------------------------------------------------------------------------------------
 k_transport = C(constant_value=10)  * RBF(4*np.ones(2)) + WhiteKernel(0.01)
 
 # This is a GP_model_1(x_label = X, y_label = X̂), to map (demo deta = X) to (transported demo deta = X̂)
