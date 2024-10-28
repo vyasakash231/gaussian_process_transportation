@@ -107,9 +107,24 @@ transport.apply_transportation()
 X1=transport.training_traj  # we will get X̂ = GP_model_1(X)
 deltaX1=transport.training_delta # we will get ΔX̂ = GP_model_1(ΔX)
 
-# Spherical Obstacle 
-obstacle_center = np.array([[-20], [30]])
-radius = 8
+# Define obstacles
+obstacles = [{'shape': 'ellipse', 'center': np.array([-25.0, 20.0]), 'reference_point': np.array([0.0, 0.0]), 
+              'axis_length': np.array([5.0, 20.0]),  'orientation': 30, 'margin': 0.25, 'repulsion_coeff': 1.0, 
+              'linear_velocity': np.array([0.0, 0.0]), 'angular_velocity': None, 'color': [0.5, 0.3, 0.6]},
+            {'shape': 'ellipse', 'center': np.array([-25.0, 20.0]), 'reference_point': np.array([0.0, 0.0]), 
+              'axis_length': np.array([5.0, 20.0]),  'orientation': 90, 'margin': 0.25, 'repulsion_coeff': 1.0, 
+              'linear_velocity': np.array([0.0, 0.0]), 'angular_velocity': None, 'color': [0.5, 0.3, 0.6]},
+            {'shape': 'ellipse', 'center': np.array([-25.0, 20.0]), 'reference_point': np.array([0.0, 0.0]), 
+              'axis_length': np.array([5.0, 20.0]),  'orientation': 160, 'margin': 0.25, 'repulsion_coeff': 1.0, 
+              'linear_velocity': np.array([0.0, 0.0]), 'angular_velocity': None, 'color': [0.5, 0.3, 0.6]},
+
+            {'shape': 'ellipse', 'center': np.array([20.0, 30.0]), 'reference_point': np.array([0.0, -8.5]), 
+              'axis_length': np.array([5.0, 20.0]),  'orientation': 200, 'margin': 0.25, 'repulsion_coeff': 1.0, 
+              'linear_velocity': np.array([0.0, 0.0]), 'angular_velocity': None, 'color': [0.7, 0.8, 0.5]},
+            {'shape': 'ellipse', 'center': np.array([26.0, 37.0]), 'reference_point': np.array([0.0, 8.5]), 
+              'axis_length': np.array([5.0, 20.0]),  'orientation': 80, 'margin': 0.25, 'repulsion_coeff': 1.0, 
+              'linear_velocity': np.array([0.0, 0.0]), 'angular_velocity': None, 'color': [0.7, 0.8, 0.5]},
+            ]
 
 # Fit the Gaussian Process dynamical system   
 print('Fitting the GP dynamical system on the transported trajectory')
@@ -118,8 +133,7 @@ gp_deltaX1=GPR(kernel=k_deltaX1)
 gp_deltaX1.fit(X1, deltaX1)  # fit a new GP_model_2(x_label = ΔX, y_label = ΔX̂)
 x1_grid=np.linspace(np.min(X1[:,0]-10), np.max(X1[:,0]+10), 100)  # 100 x-samples
 y1_grid=np.linspace(np.min(X1[:,1]-10), np.max(X1[:,1]+10), 100)  # 100 y-samples
-plot_modified_vector_field_1(gp_deltaX1, x1_grid, y1_grid, X1, target_distribution,
-                           obstacle_center, radius)
+plot_modified_vector_field_1(gp_deltaX1, x1_grid, y1_grid, X1, target_distribution, obstacles)
 plt.show()
 
 
