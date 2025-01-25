@@ -18,7 +18,7 @@ from policy_transportation import GaussianProcess as GPR
 from policy_transportation import GaussianProcessTransportation as Transport
 # from policy_transportation.transportation.gaussian_process_transportation_diffeomorphic import GaussianProcessTransportationDiffeo as Transport
 import pathlib
-from policy_transportation.plot_utils import plot_vector_field, plot_modified_vector_field_1, plot_modified_vector_field_2, plot_modified_vector_field_3
+from policy_transportation.plot_utils import *
 from policy_transportation.utils import resample
 import warnings
 warnings.filterwarnings("ignore")
@@ -128,12 +128,13 @@ obstacles = [{'shape': 'ellipse', 'center': np.array([-25.0, 20.0]), 'reference_
 
 # Fit the Gaussian Process dynamical system   
 print('Fitting the GP dynamical system on the transported trajectory')
-k_deltaX1 = C(constant_value=np.sqrt(0.1))  * Matern(1*np.ones(2), nu=2.5) + WhiteKernel(0.01)    
+k_deltaX1=C(constant_value=np.sqrt(0.1)) * Matern(1*np.ones(2), nu=2.5) + WhiteKernel(0.01)    
 gp_deltaX1=GPR(kernel=k_deltaX1)
 gp_deltaX1.fit(X1, deltaX1)  # fit a new GP_model_2(x_label = ΔX, y_label = ΔX̂)
 x1_grid=np.linspace(np.min(X1[:,0]-10), np.max(X1[:,0]+10), 100)  # 100 x-samples
 y1_grid=np.linspace(np.min(X1[:,1]-10), np.max(X1[:,1]+10), 100)  # 100 y-samples
-plot_modified_vector_field_1(gp_deltaX1, x1_grid, y1_grid, X1, target_distribution, obstacles)
+# plot_modified_vector_field_1(gp_deltaX1, x1_grid, y1_grid, X1, target_distribution, obstacles)
+plot_modified_vector_field_1_nonlinear(gp_deltaX1, x1_grid, y1_grid, X1, target_distribution, obstacles)
 plt.show()
 
 
@@ -194,7 +195,7 @@ deltaX1=transport.training_delta # we will get ΔX̂ = GP_model_1(ΔX)
 obstacle_center = np.array([[-20], [30]])
 r1 = 10
 r2 = 5
-m = 4
+m = 2
 
 # Fit the Gaussian Process dynamical system   
 print('Fitting the GP dynamical system on the transported trajectory')

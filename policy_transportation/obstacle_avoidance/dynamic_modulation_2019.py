@@ -40,7 +40,7 @@ Zeta_vec[1, :, 0] = np.linspace(0, 50, no_of_agents)
 obs = ObstacleModulationSystem(obstacles, automatic_reference_point=False)  # "automatic_reference_point" is not working yet
 
 
-# # My Method
+# # My Method Code (2012 paper)
 # for i in range(len(T) - 1):
 #     Zeta = Zeta_vec[:, :, i]
    
@@ -59,19 +59,19 @@ obs = ObstacleModulationSystem(obstacles, automatic_reference_point=False)  # "a
 #     Zeta_vec[:, :, i+1] = Zeta + Zeta_dot_vec * dt
 
 
-#  LukasHuber Code
+#  LukasHuber Code (2019 paper)
 for i in range(len(T) - 1):    
     Zeta = Zeta_vec[:, :, i]
 
      # Original dynamical system
     f = np.array([x_g - Zeta[0, :], y_g - Zeta[1, :]])
-
+   
     # Modulation dynamical system
     Zeta_dot_vec = obs.obs_avoidance_interpolation_moving(Zeta, no_of_agents, f)
    
     # Update state
     Zeta_vec[:, :, i+1] = Zeta + Zeta_dot_vec * dt
-    
+
 
 # Plotting
 plt.figure(figsize=(12, 10))
@@ -86,7 +86,7 @@ for j in range(no_of_agents):
 # Plot start and goal points
 plt.plot(Zeta_vec[0, :, 0], Zeta_vec[1, :, 0], 'go', markersize=4, label='Start')
 plt.plot(x_g, y_g, 'k*', markersize=10, label='Goal')
-
+plt.axis('equal')
 plt.xlabel('X')
 plt.ylabel('Y')
 plt.title('Agent Trajectories with Obstacle Modulation')

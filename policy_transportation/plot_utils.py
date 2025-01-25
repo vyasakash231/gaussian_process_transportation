@@ -4,7 +4,7 @@ from matplotlib import cm
 from matplotlib.patches import PathPatch, Circle
 from matplotlib.path import Path
 from tqdm import tqdm
-from .obstacle.obstacle_avoidance_Linear_DS import ObstacleModulationSystem
+from .obstacle_avoidance.obstacle_avoidance_Linear_DS import ObstacleModulationSystem
 
 
 def plot_vector_field(model, datax_grid, datay_grid, demo, surface):
@@ -38,19 +38,6 @@ def modulation_matrix_for_spherical(state, obstacle_center, obstacle_radius):
         M[i,:,:] = E @ D @ E.T
     return M
 
-# def rk4_step(model, current_state, obstacle_center, radius, dt):
-#     def f(model, Y, O_c, r):
-#         M = modulation_matrix_for_spherical(Y, O_c, r)  # shape (2,2)
-#         DS = model.predict(Y).T  # shape (2,1)
-#         return M[0] @ DS
-
-#     k1 = f(model, current_state, obstacle_center, radius).T
-#     k2 = f(model, current_state + 0.5 * dt * k1, obstacle_center, radius).T
-#     k3 = f(model, current_state + 0.5 * dt * k2, obstacle_center, radius).T
-#     k4 = f(model, current_state + dt * k3, obstacle_center, radius).T
-    
-#     next_state = current_state + (dt / 6) * (k1 + 2*k2 + 2*k3 + k4)
-#     return next_state  # shape (1,2)
 
 def plot_modified_vector_field_1(model,datax_grid,datay_grid,demo,surface,obstacles):
     # Create an instance of ObstacleModulationSystem
@@ -62,7 +49,53 @@ def plot_modified_vector_field_1(model,datax_grid,datay_grid,demo,surface,obstac
 
     vel = model.predict(pos_array)  # shape (10000,2)
 
-    Zeta_dot_vec = np.zeros((2,1))
+    # Zeta_dot_vec = np.zeros((2,1))
+
+    # Modulation dynamical system
+    Zeta_dot_vec = obs.obs_avoidance_interpolation_moving(pos_array.T, pos_array.shape[0], vel.T)  # shape (2, 10000)
+
+    u = Zeta_dot_vec[0, :].reshape(dataXX.shape)
+    v = Zeta_dot_vec[1, :].reshape(dataXX.shape)
+
+    dt = 0.1
+    current_state = demo[[0],:]  # shape (1,2)
+    new_trajectry = current_state
+    for _ in range(7000):
+        # Original dynamical system
+        vel = model.predict(current_state)  # shape (1,2)
+
+         # Modified dynamical system
+        modulated_vel = obs.obs_avoidance_interpolation_moving(current_state.T, 1, vel.T)  # shape (2,1)
+
+        future_state = current_state.T + modulated_vel * dt   # shape (2,1)
+
+        new_trajectry = np.append(new_trajectry, future_state.T, axis=0)
+        current_state = future_state.T
+    
+    fig, ax = plt.figure(figsize=(12, 7)), plt.gca()
+    ax.set_aspect(1)
+    ax.streamplot(dataXX, dataYY, u, v, density=2)
+    ax.scatter(demo[:, 0], demo[:, 1], color=[1, 0.5, 0.5])
+    ax.scatter(surface[:, 0], surface[:, 1], color=[0, 0, 0])
+    ax.plot(new_trajectry[:, 0], new_trajectry[:, 1], lw=3.5, color=[0.3, 0.7, 0.5])
+    
+    # Plot obstacles
+    obs.plot_multiple_obstacles([-60, 60, -60, 60])
+    plt.xlim(-40, 45)
+    plt.ylim(-25, 60)
+
+
+def plot_modified_vector_field_1_nonlinear(model,datax_grid,datay_grid,demo,surface,obstacles):
+    # Create an instance of ObstacleModulationSystem
+    obs = ObstacleModulationSystem(obstacles, automatic_reference_point=False)  # "automatic_reference_point" is not working yet
+
+    # For Entire State-Space
+    dataXX, dataYY = np.meshgrid(datax_grid, datay_grid)  #  both will have a shape of (100,100)
+    pos_array = np.column_stack((dataXX.ravel(), dataYY.ravel()))  # (10000,2)
+
+    vel = model.predict(pos_array)  # shape (10000,2)
+
+    # Zeta_dot_vec = np.zeros((2,1))
 
     # Modulation dynamical system
     Zeta_dot_vec = obs.obs_avoidance_interpolation_moving(pos_array.T, pos_array.shape[0], vel.T)  # shape (2, 10000)
@@ -118,7 +151,6 @@ def modulation_matrix_for_elliptic(state, obstacle_center, r1, r2, m):
         E = np.hstack((n, e[0:2].reshape(n.shape)))  # shape (2,2)
 
         #  Compute distance to the surface
-        # d = pow((q[0,i]/r1)**m + (q[1,i]/r2)**m, 1/m)
         d = (q[0,i]/r1)**m + (q[1,i]/r2)**m
 
         lambda_1 = 1 - 1/(np.abs(d))

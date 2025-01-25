@@ -210,7 +210,8 @@ class ObstacleModulationSystem:
             idx = np.arange(no_of_obstacle) != i
             denom += np.prod(d_store[idx, :] - one_mat[:, np.newaxis], axis=0)
         return denom
-
+    
+    """My Implementation of 2012 paper (Algorithm given Table-1)"""
     def mutiple_obstacle_modulation_matrix(self, state: np.ndarray, c: int, initial_velocity: np.ndarray) -> np.ndarray:
         M_combined = np.stack([np.eye((2))] * c, axis=2)
 
@@ -242,7 +243,7 @@ class ObstacleModulationSystem:
                 M_combined[:, :, i] = M_combined[:, :, i] @ M_k     
         return M_combined
     
-
+    """Lukas Implementation"""
     @staticmethod
     def get_relative_obstacle_velocity(
         position: np.ndarray,
@@ -265,7 +266,7 @@ class ObstacleModulationSystem:
                     gamma_list[n] = ObstacleModulationSystem.get_gamma_ellipse(position, obstacle, 1)  # checked
 
                 if obstacle['shape'] == 'cuboid':
-                    gamma_list[n] = ObstacleModulationSystem.get_gamma_ellipse(position, obstacle, 1)  # checked
+                    gamma_list[n] = ObstacleModulationSystem.get_gamma_cuboid(position, obstacle, 1)  # checked
 
         if ind_obstacles is None:
             ind_obstacles = gamma_list < cut_off_gamma
@@ -306,7 +307,8 @@ class ObstacleModulationSystem:
 
 
     def obs_avoidance_interpolation_moving(
-            self, state: np.ndarray, c: int, 
+            self, state: np.ndarray, 
+            c: int, 
             initial_velocity: np.ndarray, 
             cut_off_gamma=1e6,
             evaluate_in_global_frame=True):
@@ -406,12 +408,13 @@ class ObstacleModulationSystem:
                         factor_tangent_repulsion = 2
                         tang_vel_norm = np.linalg.norm(relative_velocity_trafo[1:])
                         stretched_velocity[0] += ((-1) * D_obs[0, 0, n] * tang_vel_norm * factor_tangent_repulsion)
-
+                        # print(relative_velocity_hat[:, n].shape, (E_obs[:, :, n].dot(stretched_velocity)).shape)
                     relative_velocity_hat[:, n] = E_obs[:, :, n].dot(stretched_velocity)  # E @ D @ E^-1 @ f(X)
 
                 relative_velocity_hat_magnitude[n] = np.sqrt(np.sum(relative_velocity_hat[:, n] ** 2))
 
             relative_velocity_hat_normalized = np.zeros(relative_velocity_hat.shape)
+
             ind_nonzero = relative_velocity_hat_magnitude > 0
             if np.sum(ind_nonzero):
                 relative_velocity_hat_normalized[:, ind_nonzero] = relative_velocity_hat[:, ind_nonzero] / np.tile(relative_velocity_hat_magnitude[ind_nonzero], (2, 1))  # here dim = 2 
@@ -423,9 +426,7 @@ class ObstacleModulationSystem:
                     weights=omega_obs)
 
             else:
-                weighted_direction = np.sum(
-                    np.tile(omega_obs, (1, relative_velocity_hat_normalized.shape[0])).T
-                    * relative_velocity_hat_normalized, axis=0)
+                weighted_direction = np.sum(np.tile(omega_obs, (1, relative_velocity_hat_normalized.shape[0])).T * relative_velocity_hat_normalized, axis=0)
 
             relative_velocity_magnitude = np.sum(relative_velocity_hat_magnitude * omega_obs)
             vel_final = relative_velocity_magnitude * weighted_direction.squeeze()
@@ -478,3 +479,14 @@ class ObstacleModulationSystem:
         # plt.xlim(plot_limits[0], plot_limits[1])
         # plt.ylim(plot_limits[2], plot_limits[3])
         # plt.gca().set_aspect('equal', adjustable='box')
+
+# ------------------------------------------------------------------------------------------------------------------------------------- #
+    def normalized_weights(self, zeta):
+        W = np.zeros(len(self.obstacles))
+        for idx, obstacle in enumerate(self.obstacles):
+            W[idx] = 1 / self.get_gamma_ellipse(zeta, obstacle, 1)  # agents (c) is 1
+        
+        W_norm = W / np.sum(W)
+        return W_norm
+    
+

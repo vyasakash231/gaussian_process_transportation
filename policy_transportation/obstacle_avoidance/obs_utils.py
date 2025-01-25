@@ -474,3 +474,4 @@ def get_directional_weighted_sum(
 
     if True:
         return summed_dir.as_vector()
+    
