@@ -104,7 +104,18 @@ gp_deltaX1=GPR(kernel=k_deltaX1)
 gp_deltaX1.fit(X1, deltaX1)  # fit a new GP_model_2(x_label = ΔX, y_label = ΔX̂)
 x1_grid=np.linspace(np.min(X1[:,0]-10), np.max(X1[:,0]+10), 100)
 y1_grid=np.linspace(np.min(X1[:,1]-10), np.max(X1[:,1]+10), 100)
-plot_vector_field(gp_deltaX1, x1_grid, y1_grid, X1, target_distribution)
+# plot_vector_field(gp_deltaX1, x1_grid, y1_grid, X1, target_distribution)
+dataXX, dataYY = np.meshgrid(x1_grid, y1_grid)
+pos_array = np.column_stack((dataXX.ravel(), dataYY.ravel()))
+
+vel = gp_deltaX1.predict(pos_array)
+u = vel[:, 0].reshape(dataXX.shape)
+v = vel[:, 1].reshape(dataXX.shape)
+"""----------------------------- Plot ---------------------------------"""
+fig, ax = plt.figure(figsize=(12, 12)), plt.gca()
+ax.set_aspect(1)
+ax.quiver(dataXX, dataYY, u, v, color='blue', alpha=0.6)
+ax.scatter(X1[:, 0], X1[:, 1], color=[1, 0, 0])
 
 """-------------------  Introduce an Obstacle -------------------------"""
 boundary_points = np.array([
@@ -125,7 +136,6 @@ plt.scatter(points_inside[:, 0], points_inside[:, 1], c='cyan', alpha=0.5, s=20,
 
 # Plot boundary points larger and more visible
 plt.scatter(projected_points[:, 0], projected_points[:, 1], c='black', label='Boundary Points')
-
 plt.show()
 
 
@@ -159,16 +169,14 @@ boundary_points = np.array([
 num_points = 50  # number of points on each contour
 num_contours = 3  # number of contours to generate inside the obstacle
 
-inter_boundary_points = generate_inner_contours(boundary_points, num_points, num_contours)   # (num_points x (num_contours+1), 2)
-
-# target_distribution = np.vstack((inter_boundary_points[:50], inter_boundary_points[:50], inter_boundary_points[:50]))
-source_distribution = inter_boundary_points[50:]
-projected_points = radial_projection(source_distribution, boundary_points)
+contour_points = generate_inner_contours(boundary_points, num_points, num_contours)   # (num_points x (num_contours+1), 2)
+inner_points = contour_points[num_points:]
+outer_points = radial_projection(inner_points, boundary_points)
 
 # This is a GP_model_1(x_label = X, y_label = X̂), to map (demo deta = X) to (transported demo deta = X̂)
 transport_2=Transport(kernel_transport=k_transport)  
-transport_2.source_distribution=source_distribution  # pass source distribution (S)
-transport_2.target_distribution=projected_points  # pass target distribution (τ)
+transport_2.source_distribution=inner_points  # pass source distribution (S)
+transport_2.target_distribution=outer_points  # pass target distribution (τ)
 transport_2.training_traj=X1  # pass X (demo data subset) into the GP_model_1
 transport_2.training_delta=deltaX1  # pass Ẋ = ΔX into the GP_model_1
 
@@ -196,16 +204,11 @@ fig, ax = plt.figure(figsize=(12, 12)), plt.gca()
 ax.set_aspect(1)
 ax.quiver(dataXX, dataYY, u, v, color='blue', alpha=0.6)
 ax.scatter(X2[:, 0], X2[:, 1], color=[1, 0, 0])
-ax.scatter(projected_points[:, 0], projected_points[:, 1], color=[0, 0, 0])
-
-# Plot interior points smaller and more transparent
-# plt.scatter(points_inside[:, 0], points_inside[:, 1], c='cyan', alpha=0.5, s=20, label='Interior Points')
 
 # Plot boundary points larger and more visible
-# plt.scatter(projected_points[:, 0], projected_points[:, 1], c='Magenta', label='Boundary Points')
+ax.scatter(outer_points[:, 0], outer_points[:, 1], color=[0, 0, 0])
+plt.scatter(inner_points[:, 0], inner_points[:, 1], c='Magenta', label='Boundary Points')
 plt.show()
-
-
 
 
 
@@ -223,7 +226,7 @@ print('Transporting the dynamical system on the new surface')
 transport_1.fit_transportation(do_scale=False, do_rotation=True)
 transport_1.apply_transportation()
 X1=transport_1.training_traj  # we will get X̂ = GP_model_1(X)
-deltaX1=transport_1.training_delta # we will get ΔX̂ = GP_model_1(ΔX)
+deltaX1=transport_1.training_delta  # we will get ΔX̂ = GP_model_1(ΔX)
 
 """---------------------------------- Introduce an Obstacle -------------------------------------"""
 
@@ -235,15 +238,18 @@ boundary_points = np.array([
 ])
 
 # Generate some points inside the obstacle
-num_points = 200
-# points_inside = sample_in_polygon_convex(boundary_points, num_points)
-points_inside = sample_in_polygon(boundary_points, num_points)
-projected_points = radial_projection(points_inside, boundary_points)
+num_points = 50  # number of points on each contour
+num_contours = 3  # number of contours to generate inside the obstacle
+
+contour_points = generate_inner_contours(boundary_points, num_points, num_contours)   # (num_points x (num_contours+1), 2)
+
+inner_points = contour_points[num_points:]
+outer_points = np.tile(contour_points[:num_points], (num_contours, 1))
 
 # This is a GP_model_1(x_label = X, y_label = X̂), to map (demo deta = X) to (transported demo deta = X̂)
 transport_2=Transport(kernel_transport=k_transport)  
-transport_2.source_distribution=points_inside  # pass source distribution (S)
-transport_2.target_distribution=projected_points  # pass target distribution (τ)
+transport_2.source_distribution=inner_points  # pass source distribution (S)
+transport_2.target_distribution=outer_points  # pass target distribution (τ)
 transport_2.training_traj=X1  # pass X (demo data subset) into the GP_model_1
 transport_2.training_delta=deltaX1  # pass Ẋ = ΔX into the GP_model_1
 
@@ -251,19 +257,13 @@ print('Transporting the dynamical system with obstacle on the new surface')
 transport_2.fit_transportation(do_scale=False, do_rotation=True)  # do_scale will scale the entire state-space and trajectory
 transport_2.apply_transportation()
 X2=transport_2.training_traj  # we will get X̂ = GP_model_1(X)
-deltaX2=transport_2.training_delta # we will get ΔX̂ = GP_model_1(ΔX)
+deltaX2=transport_2.training_delta  # we will get ΔX̂ = GP_model_1(ΔX)
 
 # Fit the Gaussian Process dynamical system   
 print('Fitting the GP dynamical system on the transported trajectory')
 k_deltaX2 = C(constant_value=np.sqrt(0.1))  * Matern(1*np.ones(2), nu=2.5) + WhiteKernel(0.01)    
 gp_deltaX2=GPR(kernel=k_deltaX2)
 gp_deltaX2.fit(X2, deltaX2)  # fit a new GP_model_2(x_label = ΔX, y_label = ΔX̂)
-
-# add extra points for GP model training
-# velocity = generate_divergent_rotational_flow(boundary_points, points_inside)
-velocity = generate_shaped_divergent_flow(boundary_points, points_inside)
-
-gp_deltaX2.fit(np.vstack((X2, points_inside)), np.vstack((deltaX2, velocity)))  # fit a new GP_model_2(x_label = ΔX, y_label = ΔX̂)
 x2_grid=np.linspace(np.min(X2[:,0]-10), np.max(X2[:,0]+10), 60)
 y2_grid=np.linspace(np.min(X2[:,1]-10), np.max(X2[:,1]+10), 60)
 dataXX, dataYY = np.meshgrid(x2_grid, y2_grid)
@@ -277,13 +277,10 @@ fig, ax = plt.figure(figsize=(12, 12)), plt.gca()
 ax.set_aspect(1)
 ax.quiver(dataXX, dataYY, u, v, color='blue', alpha=0.6)
 ax.scatter(X2[:, 0], X2[:, 1], color=[1, 0, 0])
-ax.scatter(projected_points[:, 0], projected_points[:, 1], color=[0, 0, 0])
-
-# Plot interior points smaller and more transparent
-plt.scatter(points_inside[:, 0], points_inside[:, 1], c='cyan', alpha=0.5, s=20, label='Interior Points')
 
 # Plot boundary points larger and more visible
-# plt.scatter(projected_points[:, 0], projected_points[:, 1], c='Magenta', label='Boundary Points')
+ax.scatter(outer_points[:, 0], outer_points[:, 1], color=[0, 0, 0])
+plt.scatter(inner_points[:, 0], inner_points[:, 1], c='Magenta', label='Boundary Points')
 plt.show()
 
 
