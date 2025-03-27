@@ -79,62 +79,62 @@ plot_vector_field(gp_deltaX1, x1_grid, y1_grid, X1, target_distribution)
 plt.show()
 
 
-# %%  Transport the dynamical system on the new surface
-k_transport = C(constant_value=10)  * RBF(4*np.ones(2)) + WhiteKernel(0.01)
+# # %%  Transport the dynamical system on the new surface
+# k_transport = C(constant_value=10)  * RBF(4*np.ones(2)) + WhiteKernel(0.01)
 
-# This is a GP_model_1(x_label = X, y_label = X̂), to map (demo deta = X) to (transported demo deta = X̂)
-transport=Transport(kernel_transport=k_transport)  
-transport.source_distribution=source_distribution  # pass source distribution (S)
-transport.target_distribution=target_distribution  # pass target distribution (τ)
-transport.training_traj=X  # pass X (demo data subset) into the GP_model_1
-transport.training_delta=deltaX  # pass Ẋ = ΔX into the GP_model_1
+# # This is a GP_model_1(x_label = X, y_label = X̂), to map (demo deta = X) to (transported demo deta = X̂)
+# transport=Transport(kernel_transport=k_transport)  
+# transport.source_distribution=source_distribution  # pass source distribution (S)
+# transport.target_distribution=target_distribution  # pass target distribution (τ)
+# transport.training_traj=X  # pass X (demo data subset) into the GP_model_1
+# transport.training_delta=deltaX  # pass Ẋ = ΔX into the GP_model_1
 
-print('Transporting the dynamical system on the new surface')
-transport.fit_transportation(do_scale=False, do_rotation=True)
-transport.apply_transportation()
-X1=transport.training_traj  # we will get X̂ = GP_model_1(X)
-deltaX1=transport.training_delta # we will get ΔX̂ = GP_model_1(ΔX)
+# print('Transporting the dynamical system on the new surface')
+# transport.fit_transportation(do_scale=False, do_rotation=True)
+# transport.apply_transportation()
+# X1=transport.training_traj  # we will get X̂ = GP_model_1(X)
+# deltaX1=transport.training_delta # we will get ΔX̂ = GP_model_1(ΔX)
 
-# Fit the Gaussian Process dynamical system   
-print('Fitting the GP dynamical system on the transported trajectory')
-k_deltaX1 = C(constant_value=np.sqrt(0.1))  * Matern(1*np.ones(2), nu=2.5) + WhiteKernel(0.01)    
-gp_deltaX1=GPR(kernel=k_deltaX1)
-gp_deltaX1.fit(X1, deltaX1)  # fit a new GP_model_2(x_label = ΔX, y_label = ΔX̂)
-x1_grid=np.linspace(np.min(X1[:,0]-10), np.max(X1[:,0]+10), 100)
-y1_grid=np.linspace(np.min(X1[:,1]-10), np.max(X1[:,1]+10), 100)
-# plot_vector_field(gp_deltaX1, x1_grid, y1_grid, X1, target_distribution)
-dataXX, dataYY = np.meshgrid(x1_grid, y1_grid)
-pos_array = np.column_stack((dataXX.ravel(), dataYY.ravel()))
+# # Fit the Gaussian Process dynamical system   
+# print('Fitting the GP dynamical system on the transported trajectory')
+# k_deltaX1 = C(constant_value=np.sqrt(0.1))  * Matern(1*np.ones(2), nu=2.5) + WhiteKernel(0.01)    
+# gp_deltaX1=GPR(kernel=k_deltaX1)
+# gp_deltaX1.fit(X1, deltaX1)  # fit a new GP_model_2(x_label = ΔX, y_label = ΔX̂)
+# x1_grid=np.linspace(np.min(X1[:,0]-10), np.max(X1[:,0]+10), 100)
+# y1_grid=np.linspace(np.min(X1[:,1]-10), np.max(X1[:,1]+10), 100)
+# # plot_vector_field(gp_deltaX1, x1_grid, y1_grid, X1, target_distribution)
+# dataXX, dataYY = np.meshgrid(x1_grid, y1_grid)
+# pos_array = np.column_stack((dataXX.ravel(), dataYY.ravel()))
 
-vel = gp_deltaX1.predict(pos_array)
-u = vel[:, 0].reshape(dataXX.shape)
-v = vel[:, 1].reshape(dataXX.shape)
-"""----------------------------- Plot ---------------------------------"""
-fig, ax = plt.figure(figsize=(12, 12)), plt.gca()
-ax.set_aspect(1)
-ax.quiver(dataXX, dataYY, u, v, color='blue', alpha=0.6)
-ax.scatter(X1[:, 0], X1[:, 1], color=[1, 0, 0])
+# vel = gp_deltaX1.predict(pos_array)
+# u = vel[:, 0].reshape(dataXX.shape)
+# v = vel[:, 1].reshape(dataXX.shape)
+# """----------------------------- Plot ---------------------------------"""
+# fig, ax = plt.figure(figsize=(12, 12)), plt.gca()
+# ax.set_aspect(1)
+# ax.quiver(dataXX, dataYY, u, v, color='blue', alpha=0.6)
+# ax.scatter(X1[:, 0], X1[:, 1], color=[1, 0, 0])
 
-"""-------------------  Introduce an Obstacle -------------------------"""
-boundary_points = np.array([
-    [5, 40],  # bottom-left
-    [10, 30],   # bottom-right
-    [30, 40],    # top-right
-    [25, 50]    # top-left
-])
+# """-------------------  Introduce an Obstacle -------------------------"""
+# boundary_points = np.array([
+#     [5, 40],  # bottom-left
+#     [10, 30],   # bottom-right
+#     [30, 40],    # top-right
+#     [25, 50]    # top-left
+# ])
 
-# Generate some points inside the obstacle
-num_points = 200
-points_inside = sample_in_polygon_convex(boundary_points, num_points)
+# # Generate some points inside the obstacle
+# num_points = 200
+# points_inside = sample_in_polygon_convex(boundary_points, num_points)
 
-projected_points = radial_projection(points_inside, boundary_points)
+# projected_points = radial_projection(points_inside, boundary_points)
 
-# Plot interior points smaller and more transparent
-plt.scatter(points_inside[:, 0], points_inside[:, 1], c='cyan', alpha=0.5, s=20, label='Interior Points')
+# # Plot interior points smaller and more transparent
+# plt.scatter(points_inside[:, 0], points_inside[:, 1], c='cyan', alpha=0.5, s=20, label='Interior Points')
 
-# Plot boundary points larger and more visible
-plt.scatter(projected_points[:, 0], projected_points[:, 1], c='black', label='Boundary Points')
-plt.show()
+# # Plot boundary points larger and more visible
+# plt.scatter(projected_points[:, 0], projected_points[:, 1], c='black', label='Boundary Points')
+# plt.show()
 
 
 # %%  Transport the dynamical system on the new surface
@@ -163,13 +163,17 @@ boundary_points = np.array([
 ])
 
 # Generate some points inside the obstacle
-num_points = 100  # number of points on each contour
-num_contours = 2  # number of contours to generate inside the obstacle
+num_points = 70  # number of points on each contour
+num_contours = 1  # number of contours to generate inside the obstacle
 
 contour_points = generate_inner_contours(boundary_points, num_points, num_contours)   # (num_points x (num_contours+1), 2)
-inner_points = contour_points[num_points:]
-# outer_points = radial_projection(inner_points, boundary_points)
-outer_points = contour_points[:num_points*num_contours]
+inner_points = contour_points[num_points:]      # (2*num_points, 2)
+# outer_points = radial_projection(inner_points, boundary_points)     # (2*num_points, 2)
+outer_points = contour_points[:num_points*num_contours]     # (2*num_points, 2)
+
+# add some noise into the data points
+outer_points[:, 0] += np.random.normal(0, 0.3, outer_points.shape[0])
+outer_points[:, 1] += np.random.normal(0, 0.3, outer_points.shape[0])
 
 # This is a GP_model_1(x_label = X, y_label = X̂), to map (demo deta = X) to (transported demo deta = X̂)
 transport_2=Transport(kernel_transport=k_transport)  

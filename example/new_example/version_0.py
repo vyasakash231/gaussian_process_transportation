@@ -28,9 +28,13 @@ source_distribution=resample(S, num_points=20)  # (20,2)
 # target_distribution=resample(S1, num_points=20)  # (20,2)
 
 theta = np.linspace(np.pi/4, 5*np.pi/4, 20)
-x = 25 + 10*np.cos(theta)
-y = 0 + 8*np.sin(theta)
+x = 20 + 10*np.cos(theta)
+y = 0 + 8*np.sin(theta) + np.random.normal(0, 0.25, 20)
 target_distribution = np.vstack((x, y)).T
+
+# x = np.linspace(15, 30, 20)
+# y = np.linspace(-10, 20, 20) #+ np.random.normal(0, 0.5, 20)
+# target_distribution = np.vstack((x, y)).T
 
 
 #%% Calculate deltaX --------------------------------------------------------------------------------------------------------------------------
