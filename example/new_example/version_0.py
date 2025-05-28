@@ -27,9 +27,11 @@ X=resample(X, num_points=400)
 source_distribution=resample(S, num_points=20)  # (20,2)
 # target_distribution=resample(S1, num_points=20)  # (20,2)
 
-theta = np.linspace(np.pi/4, 5*np.pi/4, 20)
-x = 20 + 10*np.cos(theta)
-y = 0 + 8*np.sin(theta) + np.random.normal(0, 0.25, 20)
+# theta = np.linspace(np.pi/4, 5*np.pi/4, 20)
+# theta = np.linspace(0, 3*np.pi/2, 20)
+theta = np.linspace(0, 2*np.pi, 20)
+x = 20 + 20*np.cos(theta)
+y = 0 + 10*np.sin(theta) + np.random.normal(0, 0.25, 20)
 target_distribution = np.vstack((x, y)).T
 
 # x = np.linspace(15, 30, 20)
@@ -69,12 +71,14 @@ k_transport = C(constant_value=10)  * RBF(4*np.ones(2)) + WhiteKernel(0.01)
 transport=Transport(kernel_transport=k_transport)  
 transport.source_distribution=source_distribution  # pass source distribution (S)
 transport.target_distribution=target_distribution  # pass target distribution (τ)
-transport.training_traj=X  # pass X (demo data subset) into the GP_model_1
-transport.training_delta=deltaX  # pass Ẋ = ΔX into the GP_model_1
 
 print('Transporting the dynamical system on the new surface')
 transport.fit_transportation(do_scale=False, do_rotation=True)
+
+transport.training_traj=X  # pass X (demo data subset) into the GP_model_1
+transport.training_delta=deltaX  # pass Ẋ = ΔX into the GP_model_1
 transport.apply_transportation()
+
 X1=transport.training_traj  # we will get X̂ = GP_model_1(X)
 deltaX1=transport.training_delta # we will get ΔX̂ = GP_model_1(ΔX)
 
@@ -87,7 +91,6 @@ x1_grid=np.linspace(np.min(X1[:,0]-10), np.max(X1[:,0]+10), 100)
 y1_grid=np.linspace(np.min(X1[:,1]-10), np.max(X1[:,1]+10), 100)
 plot_vector_field(gp_deltaX1, x1_grid, y1_grid, X1, target_distribution)
 plt.show()
-
 
 
 # %%

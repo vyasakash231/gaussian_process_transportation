@@ -27,9 +27,9 @@ class PolicyTransportation():
 
         pos_rotated=self.affine_transform.predict(pos)  # γ(X=pose)
         if return_std==True:
-            delta_map_mean, delta_map_std= self.delta_map.predict(pos_rotated, return_std=return_std)
+            delta_map_mean, delta_map_std= self.delta_map.predict(pos_rotated, return_std=return_std)  # Ψ(γ(X=pose))  
         else:
-            delta_map_mean= self.delta_map.predict(pos_rotated, return_std=return_std)
+            delta_map_mean= self.delta_map.predict(pos_rotated, return_std=return_std)  # Ψ(γ(X=pose))  
         pos_transported = pos_rotated + delta_map_mean  # X̂ := Φ(X) = γ(X=pose) + Ψ(γ(X=pose))  
 
         return pos_transported, delta_map_std
